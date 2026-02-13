@@ -1,0 +1,97 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  EDITOR
+}
+
+enum Status {
+  DRAFT
+  PUBLISHED
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(EDITOR)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  auditLogs AuditLog[]
+}
+
+model Event {
+  id          String   @id @default(uuid())
+  title       String
+  slug        String   @unique
+  artist      String
+  date        DateTime
+  location    String
+  description String
+  status      Status   @default(DRAFT)
+  featured    Boolean  @default(false)
+
+  photos      Photo[]
+  videos      Video[]
+  news        News[]
+
+  createdAt   DateTime @default(now())
+}
+
+model Photo {
+  id            String @id @default(uuid())
+  eventId       String
+  url           String
+  sourceVersion String
+
+  event Event @relation(fields: [eventId], references: [id])
+}
+
+model Video {
+  id            String @id @default(uuid())
+  eventId       String
+  embedUrl      String
+  sourceVersion String
+
+  event Event @relation(fields: [eventId], references: [id])
+}
+
+model News {
+  id          String   @id @default(uuid())
+  title       String
+  slug        String   @unique
+  content     String
+  status      Status   @default(DRAFT)
+  eventId     String?
+
+  event Event? @relation(fields: [eventId], references: [id])
+}
+
+model IngestionLog {
+  id        String   @id @default(uuid())
+  fileName  String
+  status    String
+  error     String?
+  duration  Float?
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  action    String
+  entity    String
+  entityId  String?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+}

@@ -1,0 +1,32 @@
+<task>
+    <description>
+        Clone the MainStage Vision website (https://mainstage.vision/index.html) including all sections and interactive features.
+    </description>
+    <status>completed</status>
+    <completed_steps>
+        <step>Authenticated and configured environment for Next.js 16 + Tailwind CSS + shadcn/ui.</step>
+        <step>Implemented core layout components: Navigation (with active state) and Footer.</step>
+        <step>Created comprehensive `lib/api.ts` to fetch real data (News, Events, Albums, Videos, Artists) from the MainStage API.</step>
+        <step>Developed all main pages with client-side filtering and search:
+            - **Home**: Hero, Recent News, Recent Albums, Events Sidebar.
+            - **Events**: Filter by Type, Province, Country, Date. Upcoming/Past tabs.
+            - **News**: Filter by Category, Search.
+            - **Albums**: Filter by Event, Search.
+            - **Videos**: Filter by Event, Search, Video Player embed.
+            - **Artists**: A-Z Filter, Genre Filter, Search.
+        </step>
+        <step>Implemented dynamic detail pages for all content types (`[id]` routes) with rich layouts and related content.</step>
+        <step>Styled all components using Tailwind CSS to match the original "MainStage" dark aesthetic (Pink #e91e63 accent).</step>
+        <step>Verified functionality with a browser walkthrough.</step>
+    </completed_steps>
+    <verification_evidence>
+        <evidence_item>
+            <description>Browser Walkthrough Recording</description>
+            <path>mainstage_clone_walkthrough_1770982426740.webp</path>
+        </evidence_item>
+    </verification_evidence>
+    <next_steps>
+        <step>Run `npm run build` to generate the production build (verified passing).</step>
+        <step>Run `npm run start` to serve the application locally.</step>
+    </next_steps>
+</task>

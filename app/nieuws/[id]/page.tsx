@@ -1,148 +1,172 @@
-"use client";
-
-import { use } from "react";
-import Link from "next/link";
+import { getArticle, getNews, getImageUrl } from "@/lib/api";
+import { notFound } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, ArrowLeft, Share2, Facebook, Twitter, Linkedin } from "lucide-react";
-import { newsArticles, getMostPopularNews } from "@/lib/data";
-import { notFound } from "next/navigation";
+import { Separator } from "@/components/ui/separator";
+import { FormattedDate } from "@/components/formatted-date";
+import {
+    Calendar,
+    User,
+    Share2,
+    ArrowRight,
+    Clock,
+    Facebook,
+    Twitter,
+    Linkedin
+} from "lucide-react";
 
-export default function NewsDetailPage({ params }: { params: Promise<{ id: string }> }) {
-    const { id } = use(params);
-    const article = newsArticles.find((a) => a.id === parseInt(id));
-    const popularNews = getMostPopularNews(3);
+export default async function NewsDetailPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
+    const article = await getArticle(id);
 
     if (!article) {
         notFound();
     }
 
+    // Fetch recent news for sidebar
+    const recentNews = await getNews({ limit: 5 });
+    const relatedNews = recentNews.filter(n => n.id !== article.id).slice(0, 4);
+
     return (
         <main className="bg-white min-h-screen pb-20">
             {/* Hero Section */}
-            <section className="relative h-[60vh] min-h-[400px] w-full bg-gray-900">
+            <section className="relative h-[60vh] min-h-[500px] w-full bg-[#15171e] overflow-hidden">
                 <Image
-                    src={article.image}
+                    src={getImageUrl(article.featuredImage)}
                     alt={article.title}
                     fill
-                    className="object-cover opacity-60"
+                    className="object-cover opacity-80"
                     priority
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-[#15171e] via-transparent to-transparent"></div>
 
-                <div className="absolute inset-x-0 bottom-0 container mx-auto px-6 pb-12">
-                    <Link href="/nieuws" className="inline-flex items-center text-gray-300 hover:text-white mb-6 transition-colors font-medium">
-                        <ArrowLeft size={20} className="mr-2" /> Terug naar Nieuws
-                    </Link>
+                <div className="absolute inset-0 container mx-auto px-6 flex flex-col justify-end pb-12">
+                    <div className="max-w-4xl">
+                        <Badge className="bg-[#e91e63] text-white border-none mb-6 text-sm font-bold uppercase tracking-wide px-3 py-1">
+                            {article.category}
+                        </Badge>
+                        <h1 className="text-4xl md:text-5xl lg:text-7xl font-black text-white leading-tight mb-6 shadow-xl drop-shadow-lg">
+                            {article.title}
+                        </h1>
 
-                    <Badge className="bg-[#e91e63] border-none text-white mb-4 text-sm font-bold uppercase tracking-wide">
-                        {article.category}
-                    </Badge>
-
-                    <h1 className="text-3xl md:text-5xl lg:text-6xl font-black text-white leading-tight mb-6 max-w-5xl">
-                        {article.title}
-                    </h1>
-
-                    <div className="flex flex-wrap items-center gap-6 text-gray-300 text-sm md:text-base font-medium">
-                        <span className="flex items-center gap-2">
-                            <Calendar size={18} className="text-[#e91e63]" /> {article.date}
-                        </span>
-                        <span className="flex items-center gap-2">
-                            <Clock size={18} className="text-[#e91e63]" /> 3 min leestijd
-                        </span>
-                        <span className="bg-white/10 px-3 py-1 rounded-full text-xs">
-                            {article.views} weergaven
-                        </span>
+                        <div className="flex flex-wrap items-center gap-6 text-gray-300 text-sm font-bold uppercase tracking-wide">
+                            <span className="flex items-center gap-2">
+                                <Calendar size={16} className="text-[#e91e63]" /> <FormattedDate date={article.publishedAt} />
+                            </span>
+                            <span className="flex items-center gap-2">
+                                <Clock size={16} className="text-[#e91e63]" /> {article.readTime || 3} MIN LEZEN
+                            </span>
+                            <span className="flex items-center gap-2">
+                                <User size={16} className="text-[#e91e63]" /> {
+                                    typeof article.author === 'string'
+                                        ? article.author
+                                        : (article.author as any)?.firstName
+                                            ? `${(article.author as any).firstName} ${(article.author as any).lastName}`
+                                            : "Redactie"
+                                }
+                            </span>
+                        </div>
                     </div>
                 </div>
             </section>
 
-            <section className="container mx-auto px-6 py-12">
+            {/* Content Section */}
+            <section className="container mx-auto px-6 py-16">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+
                     {/* Main Content */}
                     <article className="lg:col-span-8">
-                        <div className="prose prose-lg max-w-none text-gray-700 leading-relaxed">
-                            <p className="lead text-xl md:text-2xl font-semibold text-gray-900 mb-8 border-l-4 border-[#e91e63] pl-6 italic">
-                                {article.excerpt}
-                            </p>
+                        <p className="text-2xl font-bold text-gray-800 mb-8 leading-relaxed border-l-4 border-[#e91e63] pl-6 italic">
+                            {article.excerpt}
+                        </p>
 
-                            <div dangerouslySetInnerHTML={{ __html: article.content }} />
+                        <div
+                            className="prose prose-lg prose-gray max-w-none prose-headings:font-black prose-headings:text-[#15171e] prose-a:text-[#e91e63] prose-img:rounded-xl"
+                            dangerouslySetInnerHTML={{ __html: article.content || "<p>Geen inhoud beschikbaar.</p>" }}
+                        />
 
-                            <p className="mt-6">
-                                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
-                            </p>
+                        {/* Tags & Share */}
+                        <div className="mt-12 pt-8 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-6">
+                            <div className="flex gap-2">
+                                <Badge variant="outline" className="text-gray-500 border-gray-200">#{article.category}</Badge>
+                                <Badge variant="outline" className="text-gray-500 border-gray-200">#MainStage</Badge>
+                                <Badge variant="outline" className="text-gray-500 border-gray-200">#Music</Badge>
+                            </div>
 
-                            <h3 className="text-2xl font-bold text-[#15171e] mt-10 mb-4">Wat betekent dit voor de toekomst?</h3>
-                            <p>
-                                Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam.
-                            </p>
+                            <div className="flex items-center gap-4">
+                                <span className="font-bold text-gray-900 text-sm uppercase">Delen:</span>
+                                <div className="flex gap-2">
+                                    <Button size="icon" variant="outline" className="rounded-full text-blue-600 border-blue-100 hover:bg-blue-50">
+                                        <Facebook size={18} />
+                                    </Button>
+                                    <Button size="icon" variant="outline" className="rounded-full text-sky-500 border-sky-100 hover:bg-sky-50">
+                                        <Twitter size={18} />
+                                    </Button>
+                                    <Button size="icon" variant="outline" className="rounded-full text-blue-700 border-blue-100 hover:bg-blue-50">
+                                        <Linkedin size={18} />
+                                    </Button>
+                                </div>
+                            </div>
                         </div>
 
-                        {/* Share Buttons */}
-                        <div className="mt-12 pt-8 border-t border-gray-100">
-                            <h4 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                <Share2 size={18} className="text-[#e91e63]" /> Deel dit artikel
-                            </h4>
-                            <div className="flex gap-4">
-                                <Button className="bg-[#1877f2] hover:bg-[#166fe5] text-white">
-                                    <Facebook size={18} className="mr-2" /> Facebook
-                                </Button>
-                                <Button className="bg-[#1da1f2] hover:bg-[#1a91da] text-white">
-                                    <Twitter size={18} className="mr-2" /> Twitter
-                                </Button>
-                                <Button className="bg-[#0077b5] hover:bg-[#006399] text-white">
-                                    <Linkedin size={18} className="mr-2" /> LinkedIn
-                                </Button>
+                        <div className="mt-12 bg-gray-50 p-8 rounded-2xl flex items-center gap-6 border border-gray-100">
+                            <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center text-gray-400 font-bold text-xl uppercase">
+                                {typeof article.author === 'string' ? article.author[0] : ((article.author as any)?.firstName?.[0] || "M")}
+                            </div>
+                            <div>
+                                <h4 className="font-bold text-[#15171e] text-lg">
+                                    {typeof article.author === 'string'
+                                        ? article.author
+                                        : (article.author as any)?.firstName
+                                            ? `${(article.author as any).firstName} ${(article.author as any).lastName}`
+                                            : "MainStage Redactie"}
+                                </h4>
+                                <p className="text-gray-500 text-sm">Muziekjournalist en festival liefhebber.</p>
                             </div>
                         </div>
                     </article>
 
                     {/* Sidebar */}
-                    <aside className="lg:col-span-4 space-y-12">
-                        {/* Author Card - Placeholder */}
-                        <div className="bg-gray-50 p-6 rounded-xl border border-gray-100">
-                            <h3 className="font-bold text-gray-900 mb-4">Over de auteur</h3>
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-gray-200 rounded-full overflow-hidden">
-                                    {/* Avatar placeholder */}
-                                </div>
-                                <div>
-                                    <p className="font-bold text-sm">MainStage Redactie</p>
-                                    <p className="text-xs text-gray-500">Muziek experts</p>
-                                </div>
+                    <aside className="lg:col-span-4 space-y-10">
+                        {/* Popular/Recent News Widget */}
+                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 sticky top-24">
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="font-black text-lg text-[#15171e] uppercase tracking-wide border-l-4 border-[#e91e63] pl-3">
+                                    Meer Nieuws
+                                </h3>
                             </div>
-                        </div>
 
-                        {/* Popular News */}
-                        <div>
-                            <h3 className="text-xl font-bold text-[#15171e] mb-6 flex items-center gap-2">
-                                <span className="w-1.5 h-6 bg-[#e91e63] block"></span> Populaire Artikelen
-                            </h3>
                             <div className="space-y-6">
-                                {popularNews.map((news) => (
-                                    <Link href={`/nieuws/${news.id}`} key={news.id} className="flex gap-4 group">
-                                        <div className="relative w-24 h-24 rounded-lg overflow-hidden flex-shrink-0">
+                                {relatedNews.map((item) => (
+                                    <Link href={`/nieuws/${item.id}`} key={item.id} className="flex gap-4 group">
+                                        <div className="relative w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100 shadow-sm">
                                             <Image
-                                                src={news.image}
-                                                alt={news.title}
+                                                src={getImageUrl(item.featuredImage)}
+                                                alt={item.title}
                                                 fill
                                                 className="object-cover group-hover:scale-110 transition-transform duration-500"
                                             />
                                         </div>
                                         <div>
-                                            <Badge className="bg-gray-100 text-gray-600 hover:bg-gray-200 border-none text-[10px] px-2 py-0.5 mb-2">
-                                                {news.category}
-                                            </Badge>
-                                            <h4 className="font-bold text-sm text-[#15171e] group-hover:text-[#e91e63] transition-colors line-clamp-2 leading-snug">
-                                                {news.title}
+                                            <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">
+                                                <span className="text-[#e91e63]">{item.category}</span> • <FormattedDate date={item.publishedAt} />
+                                            </div>
+                                            <h4 className="font-bold text-[#15171e] text-sm leading-snug group-hover:text-[#e91e63] transition-colors line-clamp-2">
+                                                {item.title}
                                             </h4>
                                         </div>
                                     </Link>
                                 ))}
                             </div>
+
+                            <Button variant="outline" className="w-full mt-8 border-gray-200 hover:border-[#e91e63] hover:text-[#e91e63] font-bold" asChild>
+                                <Link href="/nieuws">BEKIJK ALLES</Link>
+                            </Button>
                         </div>
                     </aside>
+
                 </div>
             </section>
         </main>

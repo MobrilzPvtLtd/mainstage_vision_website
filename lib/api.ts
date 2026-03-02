@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 const API_BASE_URL = "https://beheer.mainstage.vision";
+const IMAGE_BASE_URL = "https://www.mainstage.vision/public_html";
 
 // Helper to construct image URLs
 export function getImageUrl(path: string | null | undefined, type?: "news" | "event" | "album" | "artist"): string {
@@ -15,13 +16,19 @@ export function getImageUrl(path: string | null | undefined, type?: "news" | "ev
     // Clean the path
     const cleanPath = path.startsWith("/") ? path.slice(1) : path;
 
-    // If it already looks like an uploads path, just return it with base
-    if (cleanPath.startsWith("uploads/")) return `${API_BASE_URL}/${cleanPath}`;
+    // If it already looks like an absolute uploads/photos path from our IMAGE_BASE, just return it
+    if (cleanPath.startsWith("public_html/")) return `https://www.mainstage.vision/${cleanPath}`;
+    if (cleanPath.startsWith("uploads/")) return `${IMAGE_BASE_URL}/${cleanPath}`;
+    if (cleanPath.startsWith("images/")) return `${IMAGE_BASE_URL}/${cleanPath}`;
+    if (cleanPath.startsWith("photos/")) return `${IMAGE_BASE_URL}/${cleanPath}`;
 
     // Otherwise, build the path based on type
-    if (type === "news") return `${API_BASE_URL}/uploads/news/${cleanPath}`;
+    if (type === "news") return `${IMAGE_BASE_URL}/uploads/news/${cleanPath}`;
+    if (type === "event") return `${IMAGE_BASE_URL}/images/events/${cleanPath}`;
+    if (type === "artist") return `${IMAGE_BASE_URL}/uploads/artists/${cleanPath}`;
+    if (type === "album") return `${IMAGE_BASE_URL}/uploads/albums/${cleanPath}`;
 
-    return `${API_BASE_URL}/uploads/${cleanPath}`;
+    return `${IMAGE_BASE_URL}/uploads/${cleanPath}`;
 }
 
 // Types

@@ -14,6 +14,12 @@ export const metadata: Metadata = {
   title: "MainStage Vision - Muziek Nieuws, Foto's & Events",
   description:
     "Het laatste nieuws uit de muziekwereld, live foto albums en evenementen.",
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/favicon.svg", type: "image/svg+xml" }
+    ],
+  },
 };
 
 export default function RootLayout({

@@ -20,17 +20,20 @@ import {
     Clock,
     Search,
     Filter,
-    ChevronRight
+    ChevronRight,
+    Camera,
+    Newspaper
 } from "lucide-react";
-import { Event, Article, getImageUrl } from "@/lib/api";
+import { Event, Article, Album, getImageUrl } from "@/lib/api";
 import { FormattedDate } from "@/components/formatted-date";
 
 interface EventsClientProps {
     initialEvents: Event[];
     sidebarNews: Article[];
+    recentAlbums: Album[];
 }
 
-export default function EventsClient({ initialEvents, sidebarNews }: EventsClientProps) {
+export default function EventsClient({ initialEvents, sidebarNews, recentAlbums }: EventsClientProps) {
     const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedType, setSelectedType] = useState("all");
@@ -57,15 +60,24 @@ export default function EventsClient({ initialEvents, sidebarNews }: EventsClien
         return ["all", ...Array.from(new Set(countries))];
     }, [initialEvents]);
 
+    // Normalize "now" to start of day for cleaner date comparison
+    const now = useMemo(() => {
+        const d = new Date();
+        d.setHours(0, 0, 0, 0);
+        return d;
+    }, []);
+
     // Filter Logic
     const filteredEvents = useMemo(() => {
         let results = initialEvents;
 
-        // Tab Filter
+        // Tab Filter — compare startDate at day boundary
         if (activeTab === "upcoming") {
-            results = results.filter(e => new Date(e.startDate) >= new Date());
+            results = results.filter(e => new Date(e.startDate) >= now);
+            results = results.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
         } else {
-            results = results.filter(e => new Date(e.startDate) < new Date());
+            results = results.filter(e => new Date(e.startDate) < now);
+            results = results.sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
         }
 
         if (searchQuery) {
@@ -96,37 +108,42 @@ export default function EventsClient({ initialEvents, sidebarNews }: EventsClien
         }
 
         return results;
-    }, [initialEvents, searchQuery, selectedType, selectedProvince, selectedCountry, activeTab]);
+    }, [initialEvents, searchQuery, selectedType, selectedProvince, selectedCountry, activeTab, selectedMonth, now]);
+
 
     return (
         <div className="bg-gray-100 min-h-screen">
             {/* Hero Section / Slider */}
             {featuredEvents.length > 0 && (
-                <section className="relative h-[400px] md:h-[500px] w-full bg-[#15171e] overflow-hidden">
+                <section className="relative h-[450px] md:h-[550px] w-full bg-[#15171e] overflow-hidden">
+                    {/* Background Grid Pattern */}
+                    <div className="absolute inset-0 z-0 opacity-20" style={{ backgroundImage: 'linear-gradient(#ffffff10 1px, transparent 1px), linear-gradient(90deg, #ffffff10 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
+
                     {featuredEvents.map((event, idx) => (
                         <div
                             key={event.id}
                             className={`absolute inset-0 transition-opacity duration-1000 ${idx === heroIndex ? "opacity-100 z-10" : "opacity-0 z-0"}`}
                         >
                             <Image
-                                src={getImageUrl(event.logoUrl || event.logo)}
+                                src={getImageUrl(event.logoUrl || event.logo, "event")}
                                 alt={event.name}
                                 fill
-                                className="object-cover opacity-40 blur-[2px]"
+                                className="object-cover opacity-40 blur-[1px]"
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-[#15171e] via-transparent to-transparent"></div>
-                            <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6">
-                                <Badge className="bg-[#e91e63] text-white border-none mb-4 uppercase font-bold px-3 py-1">
+                            <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 mt-12">
+                                <Badge className="bg-[#e91e63] text-white border-none mb-4 uppercase font-bold px-4 py-1.5 rounded-full text-xs tracking-widest animate-fade-in shadow-[0_0_20px_rgba(233,30,99,0.3)]">
                                     {event.eventType}
                                 </Badge>
-                                <h2 className="text-4xl md:text-6xl font-black text-white mb-2 drop-shadow-lg">
-                                    {event.name}
-                                </h2>
-                                <p className="text-gray-300 text-lg md:text-xl font-bold uppercase tracking-widest mb-6">
-                                    <FormattedDate date={event.startDate} /> • {event.venueName}, {event.city}
+                                <h1 className="text-4xl md:text-7xl font-black text-white mb-4 drop-shadow-2xl max-w-4xl tracking-tight leading-none uppercase">
+                                    {event.name.split(' - ')[0]}
+                                    <span className="block text-[#e91e63]">{event.name.split(' - ')[1]}</span>
+                                </h1>
+                                <p className="text-gray-300 text-lg md:text-2xl font-bold uppercase tracking-[0.3em] mb-10 opacity-80">
+                                    <FormattedDate date={event.startDate} /> <span className="text-[#e91e63] mx-2">•</span> {event.venueName}, {event.city}
                                 </p>
-                                <Button className="bg-[#e91e63] hover:bg-[#c2185b] text-white font-black px-8 py-6 rounded-lg text-lg transform hover:scale-105 transition-all">
-                                    INFO & TICKETS
+                                <Button asChild className="bg-[#e91e63] hover:bg-white hover:text-[#e91e63] text-white font-black px-12 py-8 rounded-2xl text-xl transform hover:scale-105 transition-all duration-300 shadow-2xl">
+                                    <Link href={`/events/${event.id}`}>ONTDEK DIT EVENT</Link>
                                 </Button>
                             </div>
                         </div>
@@ -172,38 +189,62 @@ export default function EventsClient({ initialEvents, sidebarNews }: EventsClien
                                 </button>
                             </div>
 
-                            <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 grid grid-cols-1 md:grid-cols-3 gap-3">
-                                <div className="md:col-span-1 relative">
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                            <div className="bg-white p-2 md:p-3 rounded-full shadow-xl border border-gray-100 flex flex-col md:flex-row items-center gap-2">
+                                <div className="w-full md:w-auto flex-grow relative px-4">
+                                    <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                                     <Input
-                                        placeholder="Zoek event, artiest of locatie..."
-                                        className="pl-9 h-12 bg-gray-50 border-none rounded-xl"
+                                        placeholder="Zoek event..."
+                                        className="pl-10 h-12 bg-transparent border-none rounded-full shadow-none focus-visible:ring-0 text-gray-900 font-medium"
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                     />
                                 </div>
-                                <Select value={selectedType} onValueChange={setSelectedType}>
-                                    <SelectTrigger className="h-12 bg-gray-50 border-none rounded-xl shadow-none focus:ring-1 focus:ring-gray-200">
-                                        <SelectValue placeholder="Alle types" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">Alle types</SelectItem>
-                                        {uniqueTypes.filter(t => t !== 'all').map(type => (
-                                            <SelectItem key={type} value={type}>{type}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                                    <SelectTrigger className="h-12 bg-gray-50 border-none rounded-xl shadow-none">
-                                        <SelectValue placeholder="Alle maanden" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">Alle maanden</SelectItem>
-                                        {["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dec"].map((m, i) => (
-                                            <SelectItem key={m} value={i.toString()}>{m}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                <div className="w-full md:w-auto flex flex-wrap md:flex-nowrap gap-2">
+                                    <Select value={selectedType} onValueChange={setSelectedType}>
+                                        <SelectTrigger className="h-12 bg-gray-50 border-none rounded-full px-6 shadow-none focus:ring-0 min-w-[130px] font-bold text-xs uppercase tracking-wider text-gray-500 hover:bg-gray-100 transition-colors">
+                                            <SelectValue placeholder="EVENT TYPE" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">ALLE TYPES</SelectItem>
+                                            {uniqueTypes.filter(t => t !== 'all').map(type => (
+                                                <SelectItem key={type} value={type}>{type.toUpperCase()}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                                        <SelectTrigger className="h-12 bg-gray-50 border-none rounded-full px-6 shadow-none focus:ring-0 min-w-[130px] font-bold text-xs uppercase tracking-wider text-gray-500 hover:bg-gray-100 transition-colors">
+                                            <SelectValue placeholder="MAAND" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">ALLE MAANDEN</SelectItem>
+                                            {["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dec"].map((m, i) => (
+                                                <SelectItem key={m} value={i.toString()}>{m.toUpperCase()}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <Select value={selectedProvince} onValueChange={setSelectedProvince}>
+                                        <SelectTrigger className="h-12 bg-gray-50 border-none rounded-full px-6 shadow-none focus:ring-0 min-w-[130px] font-bold text-xs uppercase tracking-wider text-gray-500 hover:bg-gray-100 transition-colors">
+                                            <SelectValue placeholder="PROVINCIE" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">ALLE PROVINCIES</SelectItem>
+                                            {uniqueProvinces.filter(p => p !== 'all').map(prov => (
+                                                <SelectItem key={prov} value={prov}>{prov.toUpperCase()}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <Select value={selectedCountry} onValueChange={setSelectedCountry}>
+                                        <SelectTrigger className="h-12 bg-gray-50 border-none rounded-full px-6 shadow-none focus:ring-0 min-w-[130px] font-bold text-xs uppercase tracking-wider text-gray-500 hover:bg-gray-100 transition-colors mr-2">
+                                            <SelectValue placeholder="LAND" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">ALLE LANDEN</SelectItem>
+                                            {uniqueCountries.filter(c => c !== 'all').map(country => (
+                                                <SelectItem key={country} value={country}>{country.toUpperCase()}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                             </div>
                         </div>
 
@@ -217,121 +258,154 @@ export default function EventsClient({ initialEvents, sidebarNews }: EventsClien
                                 </div>
                             ) : (
                                 filteredEvents.map((event) => (
-                                    <div
+                                    <Link
                                         key={event.id}
-                                        className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 group flex flex-col md:flex-row relative"
+                                        href={`/events/${event.id}`}
+                                        className="bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 border border-gray-100 group flex relative"
                                     >
                                         {/* Date Block */}
-                                        <div className="bg-[#15171e] text-white p-6 flex flex-row md:flex-col items-center justify-center md:w-32 flex-shrink-0 gap-2 md:gap-0 border-r border-gray-800">
-                                            <span className="text-4xl md:text-5xl font-black text-white">
+                                        <div className="bg-[#15171e] text-white p-6 flex flex-col items-center justify-center w-24 md:w-32 flex-shrink-0 border-r border-gray-800 transition-colors group-hover:bg-[#e91e63]">
+                                            <span className="text-4xl md:text-5xl font-black text-white leading-none">
                                                 {new Date(event.startDate).getDate()}
                                             </span>
-                                            <span className="text-lg md:text-xl font-bold uppercase text-[#e91e63] md:mb-1">
+                                            <span className="text-sm md:text-base font-black uppercase text-[#e91e63] group-hover:text-white transition-colors mt-1">
                                                 {new Date(event.startDate).toLocaleDateString('nl-NL', { month: 'short' }).replace('.', '').toUpperCase()}
                                             </span>
-                                            <span className="text-sm md:text-base font-medium opacity-40">
+                                            <span className="text-[10px] md:text-xs font-bold opacity-40 group-hover:opacity-70">
                                                 {new Date(event.startDate).getFullYear()}
                                             </span>
                                         </div>
 
                                         {/* Details */}
-                                        <div className="p-6 md:p-8 flex-grow flex flex-col justify-center">
-                                            <div className="flex flex-col gap-1 mb-4">
-                                                <Badge className="bg-[#e91e63]/10 text-[#e91e63] border-none text-[10px] uppercase font-black tracking-widest px-2 py-0.5 w-fit">
+                                        <div className="p-5 md:p-8 flex-grow flex flex-col justify-center overflow-hidden">
+                                            <div className="flex flex-col gap-1">
+                                                <Badge className="bg-[#e91e63]/10 text-[#e91e63] border-none text-[9px] uppercase font-black tracking-widest px-2 py-0.5 w-fit mb-1">
                                                     {event.eventType}
                                                 </Badge>
-                                                <h3 className="text-2xl font-black text-[#15171e] group-hover:text-[#e91e63] transition-colors leading-tight">
+                                                <h3 className="text-xl md:text-2xl font-black text-[#15171e] group-hover:text-[#e91e63] transition-colors leading-tight truncate">
                                                     {event.name}
                                                 </h3>
-                                                <p className="text-gray-500 font-bold text-sm">
-                                                    {event.venueName} — {event.city}
-                                                </p>
-                                            </div>
-
-                                            {/* Lineup */}
-                                            {event.lineupArtists && event.lineupArtists.length > 0 && (
-                                                <div className="mt-4 pt-4 border-t border-gray-50">
-                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">LINEUP:</p>
-                                                    <div className="flex flex-wrap gap-2">
-                                                        {event.lineupArtists.map(artist => (
-                                                            <Link
-                                                                key={artist.id}
-                                                                href={`/artiesten/${artist.id}`}
-                                                                className="px-3 py-1.5 bg-gray-50 hover:bg-[#e91e63] hover:text-white rounded-lg text-xs font-bold text-gray-600 transition-colors shadow-sm"
-                                                            >
+                                                <div className="flex items-center gap-2 text-gray-500 font-bold text-xs mt-1">
+                                                    <MapPin size={14} className="text-gray-400" />
+                                                    <span className="truncate">{event.venueName} — {event.city}</span>
+                                                </div>
+                                                {/* Lineup Artists */}
+                                                {event.lineupArtists && event.lineupArtists.length > 0 && (
+                                                    <div className="flex flex-wrap gap-1.5 mt-2">
+                                                        {event.lineupArtists.slice(0, 4).map((artist, i) => (
+                                                            <span key={i} className="text-[9px] font-black uppercase tracking-wide text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
                                                                 {artist.name}
-                                                            </Link>
+                                                            </span>
                                                         ))}
-                                                        {event.lineupArtists.length > 5 && (
-                                                            <span className="text-[10px] font-bold text-[#e91e63] flex items-center cursor-pointer hover:underline">
-                                                                ▼ Bekijk volledige lineup ({event.lineupArtists.length})
+                                                        {event.lineupArtists.length > 4 && (
+                                                            <span className="text-[9px] font-black uppercase tracking-wide text-[#e91e63] bg-[#e91e63]/10 px-2 py-0.5 rounded-full">
+                                                                +{event.lineupArtists.length - 4}
                                                             </span>
                                                         )}
                                                     </div>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* Logo on the right */}
-                                        <div className="hidden lg:flex items-center justify-center p-8 border-l border-gray-50 w-48">
-                                            <div className="relative w-24 h-24">
-                                                <Image
-                                                    src={getImageUrl(event.logoUrl || event.logo)}
-                                                    alt="Logo"
-                                                    fill
-                                                    className="object-contain grayscale hover:grayscale-0 transition-all duration-500 opacity-60 hover:opacity-100"
-                                                />
+                                                )}
                                             </div>
                                         </div>
-                                    </div>
+
+                                        {/* Thumbnail on the right */}
+                                        <div className="relative w-24 md:w-40 flex-shrink-0 overflow-hidden">
+                                            <Image
+                                                src={getImageUrl(event.logoUrl || event.logo, "event")}
+                                                alt={event.name}
+                                                fill
+                                                className="object-cover group-hover:scale-110 transition-transform duration-700"
+                                            />
+                                            <div className="absolute inset-0 bg-gradient-to-l from-transparent to-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                        </div>
+                                    </Link>
+
                                 ))
                             )}
                         </div>
                     </div>
 
                     {/* Sidebar Area */}
-                    <div className="lg:col-span-4 space-y-10">
-                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                            <div className="flex justify-between items-center mb-6">
-                                <h3 className="font-black text-lg text-[#15171e] uppercase tracking-wide flex items-center gap-2">
-                                    <span className="w-1.5 h-6 bg-[#e91e63] rounded-full"></span>
-                                    Laatste Nieuws
+                    <div className="lg:col-span-4 space-y-8">
+                        {/* Sidebar News */}
+                        <div className="bg-white p-8 rounded-[2rem] shadow-xl border border-gray-100">
+                            <div className="flex justify-between items-center mb-8">
+                                <h3 className="font-black text-xl text-[#15171e] uppercase tracking-tight flex items-center gap-2">
+                                    <Newspaper className="text-[#e91e63]" size={24} />
+                                    Nieuws
                                 </h3>
-                                <Link href="/nieuws" className="text-xs font-bold text-[#e91e63] hover:underline flex items-center gap-1">
-                                    MEER <ChevronRight size={14} />
+                                <Link href="/nieuws" className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-50 text-[#e91e63] hover:bg-[#e91e63] hover:text-white transition-all shadow-sm">
+                                    <ChevronRight size={18} />
                                 </Link>
                             </div>
 
-                            <div className="space-y-6">
-                                {sidebarNews.map((item) => (
+                            <div className="space-y-8">
+                                {sidebarNews.slice(0, 3).map((item) => (
                                     <Link href={`/nieuws/${item.id}`} key={item.id} className="flex gap-4 group">
-                                        <div className="relative w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
+                                        <div className="relative w-20 h-20 flex-shrink-0 rounded-2xl overflow-hidden bg-gray-100 shadow-md">
                                             <Image
-                                                src={getImageUrl(item.featuredImage)}
+                                                src={getImageUrl(item.featuredImage, "news")}
                                                 alt={item.title}
                                                 fill
                                                 className="object-cover group-hover:scale-110 transition-transform duration-500"
                                             />
                                         </div>
                                         <div className="flex flex-col justify-center">
-                                            <div className="text-[10px] font-black text-gray-400 uppercase mb-1">
-                                                <span className="text-[#e91e63]">{item.category}</span> • <FormattedDate date={item.publishedAt} />
-                                            </div>
-                                            <h4 className="font-bold text-[#15171e] text-sm leading-tight group-hover:text-[#e91e63] transition-colors line-clamp-2">
+                                            <h4 className="font-black text-[#15171e] text-sm leading-tight group-hover:text-[#e91e63] transition-colors line-clamp-2 mb-1">
                                                 {item.title}
                                             </h4>
+                                            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                                                <FormattedDate date={item.publishedAt} />
+                                            </div>
                                         </div>
                                     </Link>
                                 ))}
                             </div>
                         </div>
 
-                        {/* Social Widget or Ad placeholder can go here */}
-                        <div className="bg-[#15171e] rounded-2xl p-8 text-center text-white">
-                            <h4 className="text-xl font-black mb-4">Adverteren?</h4>
-                            <p className="text-gray-400 text-sm mb-6">Zet jouw festival of artiest in de spotlight bij MainStage Vision.</p>
-                            <Button className="bg-white text-[#15171e] hover:bg-[#e91e63] hover:text-white font-black w-full rounded-xl">
-                                CONTACT ONS
+                        {/* Recent Albums */}
+                        <div className="bg-white p-8 rounded-[2rem] shadow-xl border border-gray-100">
+                            <div className="flex justify-between items-center mb-8">
+                                <h3 className="font-black text-xl text-[#15171e] uppercase tracking-tight flex items-center gap-2">
+                                    <Camera className="text-[#e91e63]" size={24} />
+                                    Albums
+                                </h3>
+                                <Link href="/albums" className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-50 text-[#e91e63] hover:bg-[#e91e63] hover:text-white transition-all shadow-sm">
+                                    <ChevronRight size={18} />
+                                </Link>
+                            </div>
+
+                            <div className="space-y-8">
+                                {recentAlbums.map((album) => (
+                                    <Link href={`/albums/${album.id}`} key={album.id} className="flex gap-4 group">
+                                        <div className="relative w-20 h-20 flex-shrink-0 rounded-2xl overflow-hidden bg-gray-100 shadow-md">
+                                            <Image
+                                                src={getImageUrl(album.coverImage, "album")}
+                                                alt={album.title}
+                                                fill
+                                                className="object-cover group-hover:scale-110 transition-transform duration-500"
+                                            />
+                                        </div>
+                                        <div className="flex flex-col justify-center">
+                                            <h4 className="font-black text-[#15171e] text-sm leading-tight group-hover:text-[#e91e63] transition-colors line-clamp-2 mb-1">
+                                                {album.title}
+                                            </h4>
+                                            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                                                {album.photoCount} FOTO'S
+                                            </div>
+                                        </div>
+                                    </Link>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="bg-[#15171e] rounded-[2rem] p-8 text-center text-white relative overflow-hidden shadow-2xl">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-[#e91e63]/10 blur-3xl"></div>
+                            <h4 className="text-xl font-black mb-3">Partner worden?</h4>
+                            <p className="text-gray-400 text-xs font-bold leading-relaxed mb-6 px-4 uppercase tracking-wider">
+                                BRENG JOUW EVENT NAAR HET GROTE PUBLIEK MET MAINSTAGE VISION.
+                            </p>
+                            <Button asChild className="bg-[#e91e63] hover:bg-white hover:text-[#e91e63] text-white font-black w-full rounded-xl py-6 transition-all shadow-lg shadow-[#e91e63]/20">
+                                <Link href="/contact">NEEM CONTACT OP</Link>
                             </Button>
                         </div>
                     </div>

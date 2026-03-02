@@ -43,6 +43,13 @@ export default function ArtistsClient({ initialArtists }: ArtistsClientProps) {
 
     const alphabet = "#ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
+    const formatFollowers = (count?: number) => {
+        if (!count) return "--";
+        if (count >= 1000000) return (count / 1000000).toFixed(1) + "M";
+        if (count >= 1000) return (count / 1000).toFixed(1) + "K";
+        return count.toString();
+    };
+
     return (
         <main className="bg-[#f5f5fa] min-h-screen text-[#15171e]">
             {/* Header Section */}
@@ -59,13 +66,13 @@ export default function ArtistsClient({ initialArtists }: ArtistsClientProps) {
                 </div>
 
                 <div className="container mx-auto px-6 relative z-10 text-center">
-                    <Badge className="bg-[#e91e63] hover:bg-[#d81557] mb-4">ARTIESTEN & DJ'S</Badge>
-                    <h1 className="text-4xl md:text-6xl font-extrabold mb-6 tracking-tight">
+                    <Badge className="bg-[#e91e63] hover:bg-[#d81557] mb-4 px-4 py-1 rounded-full text-xs font-bold tracking-widest uppercase">ARTIESTEN & DJ'S</Badge>
+                    <h1 className="text-4xl md:text-7xl font-black mb-6 tracking-tight leading-none">
                         Vind jouw favoriete <span className="text-[#e91e63]">artiest</span>
                     </h1>
-                    <p className="text-xl text-gray-400 max-w-2xl mx-auto mb-10">
-                        Een compleet overzicht van alle artiesten, DJ's en bands in onze database.
-                        Bekijk hun bio, aankomende events en laatste foto's.
+                    <p className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed font-medium">
+                        Ontdek een compleet overzicht van alle artiesten, DJ's en bands. 
+                        Bekijk biografieën, aankomende events en exclusieve fotoalbums.
                     </p>
 
                     {/* Search & Filter Bar */}
@@ -149,54 +156,55 @@ export default function ArtistsClient({ initialArtists }: ArtistsClientProps) {
                             <Link href={`/artiesten/${artist.id}`} key={artist.id} className="group">
                                 <div className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100 h-full flex flex-col">
                                     {/* Image Container */}
-                                    <div className="relative h-64 overflow-hidden">
+                                    <div className="relative h-72 overflow-hidden">
                                         <Image
-                                            src={getImageUrl(artist.photoUrl)}
+                                            src={getImageUrl(artist.photoUrl, "artist")}
                                             alt={artist.name}
                                             fill
-                                            className="object-cover group-hover:scale-110 transition-transform duration-700"
+                                            className="object-cover group-hover:scale-105 transition-transform duration-500"
                                         />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-[#15171e] via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity"></div>
+                                        <div className="absolute inset-0 bg-gradient-to-t from-[#15171e]/90 via-[#15171e]/20 to-transparent opacity-80 group-hover:opacity-90 transition-opacity"></div>
 
                                         {artist.verified && (
-                                            <div className="absolute top-4 right-4 bg-blue-500 text-white p-1 rounded-full shadow-lg" title="Verified Artist">
+                                            <div className="absolute top-4 right-4 bg-[#e91e63] text-white p-1 rounded-full shadow-lg z-10" title="Verified Artist">
                                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-                                                    <path fillRule="evenodd" d="M8.603 3.799A4.49 4.49 0 0112 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 013.498 1.307 4.491 4.491 0 011.307 3.497A4.49 4.49 0 0121.75 12a4.49 4.49 0 01-1.549 3.397 4.491 4.491 0 01-1.307 3.497 4.491 4.491 0 01-3.497 1.307A4.49 4.49 0 0112 21.75a4.49 4.49 0 01-3.397-1.549 4.49 4.49 0 01-3.498-1.306 4.491 4.491 0 01-1.307-3.498A4.49 4.49 0 012.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 011.307-3.497 4.491 4.491 0 013.497-1.307zm7.007 6.387a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" />
+                                                    <path fillRule="evenodd" d="M8.603 3.799A4.49 4.49 0 0112 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 013.498 1.307 4.491 4.491 0 011.307 3.497A4.49 4.49 0 0121.75 12a4.49 4.49 0 01-1.549 3.397 4.491 4.491 0 01-1.307 3.497 4.491 4.491 0 01-3.497 1.307A4.49 4.49 0 0112 21.75a4.49 4.49 0 01-3.397-1.549a4.49 4.49 0 01-3.498-1.306 4.491 4.491 0 01-1.307-3.498A4.49 4.49 0 012.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 011.307-3.497 4.491 4.491 0 013.497-1.307zm7.007 6.387a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" />
                                                 </svg>
                                             </div>
                                         )}
 
-                                        <div className="absolute bottom-0 left-0 w-full p-6">
-                                            <h3 className="text-2xl font-bold text-white group-hover:text-[#e91e63] transition-colors mb-1">
+                                        <div className="absolute bottom-0 left-0 w-full p-6 z-10">
+                                            <Badge className="bg-[#e91e63] text-white border-none text-[10px] uppercase font-bold tracking-widest mb-2 px-2 py-0.5 rounded-sm">
+                                                {artist.genre || "Artist"}
+                                            </Badge>
+                                            <h3 className="text-2xl font-black text-white group-hover:text-[#e91e63] transition-colors leading-tight">
                                                 {artist.name}
                                             </h3>
-                                            <Badge className="bg-[#e91e63] text-white border-none text-xs font-normal">
-                                                {artist.genre}
-                                            </Badge>
                                         </div>
                                     </div>
 
                                     {/* Stats Grid */}
-                                    <div className="p-6 grid grid-cols-2 gap-4 border-t border-gray-100 bg-white">
-                                        <div className="text-center p-3 bg-gray-50 rounded-lg group-hover:bg-[#e91e63]/5 transition-colors">
-                                            <Calendar className="mx-auto mb-1 text-gray-400 group-hover:text-[#e91e63]" size={18} />
-                                            <span className="block text-lg font-bold text-[#15171e]">{artist.eventCount || 0}</span>
-                                            <span className="text-[10px] text-gray-500 uppercase tracking-wide">Events</span>
+                                    <div className="p-5 grid grid-cols-2 gap-3 border-t border-gray-50 bg-white">
+                                        <div className="text-center p-3 bg-gray-50/50 rounded-xl group-hover:bg-[#e91e63]/5 transition-colors duration-300">
+                                            <Calendar className="mx-auto mb-1.5 text-gray-400 group-hover:text-[#e91e63] transition-colors" size={16} />
+                                            <span className="block text-xl font-black text-[#15171e] leading-none mb-1">{artist.eventCount || 0}</span>
+                                            <span className="text-[9px] text-gray-400 uppercase font-bold tracking-widest">Events</span>
                                         </div>
-                                        <div className="text-center p-3 bg-gray-50 rounded-lg group-hover:bg-[#e91e63]/5 transition-colors">
-                                            <Camera className="mx-auto mb-1 text-gray-400 group-hover:text-[#e91e63]" size={18} />
-                                            <span className="block text-lg font-bold text-[#15171e]">{artist.photoCount || 0}</span>
-                                            <span className="text-[10px] text-gray-500 uppercase tracking-wide">Foto's</span>
+                                        <div className="text-center p-3 bg-gray-50/50 rounded-xl group-hover:bg-[#e91e63]/5 transition-colors duration-300">
+                                            <Camera className="mx-auto mb-1.5 text-gray-400 group-hover:text-[#e91e63] transition-colors" size={16} />
+                                            <span className="block text-xl font-black text-[#15171e] leading-none mb-1">{artist.photoCount || 0}</span>
+                                            <span className="text-[9px] text-gray-400 uppercase font-bold tracking-widest">Foto's</span>
                                         </div>
                                     </div>
 
                                     {/* Footer Stats - Followers */}
-                                    <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-between items-center text-xs text-gray-500">
-                                        <span className="flex items-center gap-1">
-                                            <Users size={14} /> {(artist.followers ? (artist.followers / 1000000).toFixed(1) + "M" : "--")} volgers
+                                    <div className="px-5 py-4 bg-white border-t border-gray-50 flex justify-between items-center">
+                                        <span className="flex items-center gap-1.5 text-[11px] font-bold text-gray-400 uppercase tracking-tight">
+                                            <Users size={12} className="text-[#e91e63]" /> 
+                                            {formatFollowers(artist.followers)} volgers
                                         </span>
-                                        <span className="text-[#e91e63] font-bold group-hover:translate-x-1 transition-transform inline-flex items-center">
-                                            PROFIEL <ChevronRight size={14} />
+                                        <span className="text-[#e91e63] text-[10px] font-black tracking-widest group-hover:translate-x-1 transition-transform inline-flex items-center uppercase">
+                                            PROFIEL <ChevronRight size={14} className="ml-0.5" />
                                         </span>
                                     </div>
                                 </div>

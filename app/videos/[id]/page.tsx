@@ -107,7 +107,7 @@ async function RelatedVideosWrapper({ currentId }: { currentId: number }) {
             {related.map(vid => (
                 <Link href={`/videos/${vid.id}`} key={vid.id} className="flex gap-3 group hover:bg-white/5 p-2 rounded-lg transition-colors">
                     <div className="relative w-32 h-20 rounded-lg overflow-hidden flex-shrink-0">
-                        <Image src={getImageUrl(vid.thumbnailUrl)} alt={vid.title} fill className="object-cover" />
+                        <Image src={getImageUrl(vid.thumbnailUrl, "event")} alt={vid.title} fill className="object-cover" />
                         <div className="absolute bottom-1 right-1 bg-black/80 text-[10px] px-1 rounded font-bold">
                             {vid.duration ? `${Math.floor(vid.duration / 60)}:${(vid.duration % 60).toString().padStart(2, '0')}` : "VIDEO"}
                         </div>

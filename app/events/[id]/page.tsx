@@ -1,12 +1,13 @@
-import { getEvent, getImageUrl, getNews, getVideos, getEvents } from "@/lib/api";
+import { getEvent, getImageUrl, getNews, getVideos, getEvents, getAlbums } from "@/lib/api";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, MapPin, Ticket, Globe, Play, ChevronRight, ArrowLeft, Info } from "lucide-react";
+import { Calendar, Clock, MapPin, Ticket, Globe, Play, ChevronRight, ArrowLeft, Info, Camera } from "lucide-react";
 import { FormattedDate } from "@/components/formatted-date";
 import { EventLineupClient } from "@/components/event-lineup-client";
+import { SocialShare } from "@/components/social-share";
 
 export default async function EventDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
@@ -19,6 +20,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
     // Fetch related content
     const relatedNews = await getNews({ eventId: event.id, limit: 3 });
     const relatedVideos = await getVideos({ eventId: event.id, limit: 2 });
+    const relatedAlbums = await getAlbums({ eventId: event.id, limit: 4 });
     const relatedEvents = await getEvents({ limit: 4, includePast: true }); // Standard related events fallback
 
     // Festival dates (Programma) - If this event is part of a series, logic would go here.
@@ -187,6 +189,30 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
                                 </div>
                             </div>
                         )}
+
+                        {/* Gerelateerde Albums */}
+                        {relatedAlbums.length > 0 && (
+                            <div className="space-y-8">
+                                <h2 className="text-3xl font-black text-white flex items-center gap-3">
+                                    <Badge variant="secondary" className="bg-[#e91e63]/20 text-[#e91e63] p-2 rounded-lg">
+                                        <Camera className="size-6" />
+                                    </Badge>
+                                    Gerelateerde Albums
+                                </h2>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {relatedAlbums.map((album) => (
+                                        <Link href={`/albums/${album.id}`} key={album.id} className="group relative aspect-video rounded-2xl overflow-hidden border border-white/10 shadow-xl">
+                                            <Image src={getImageUrl(album.coverImage, "album")} alt={album.title} fill className="object-cover group-hover:scale-110 transition-transform duration-700" />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                                            <div className="absolute bottom-4 left-4 right-4">
+                                                <h4 className="text-sm font-bold text-white group-hover:text-[#e91e63] transition-colors line-clamp-1">{album.title}</h4>
+                                                <p className="text-[10px] text-gray-400 font-bold uppercase">{album.photoCount} FOTO'S</p>
+                                            </div>
+                                        </Link>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Right Column: Sidebar */}
@@ -198,6 +224,11 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
                                 <div className="absolute -top-10 -right-10 w-40 h-40 bg-[#e91e63]/10 blur-[80px] rounded-full"></div>
 
                                 <h3 className="text-2xl font-black text-white">Details</h3>
+
+                                <div className="space-y-2 pb-2">
+                                    <p className="text-xs text-gray-500 font-black uppercase tracking-[0.2em] mb-3">DEEL DIT EVENT</p>
+                                    <SocialShare url={`/events/${event.id}`} title={event.name} />
+                                </div>
 
                                 <div className="space-y-6 relative z-10">
                                     <div className="flex items-start gap-5">
@@ -251,7 +282,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
                                             </Link>
                                         </Button>
                                     )}
-                                    {(event.websiteUrl || event.officialWebsiteUrl) && (
+                                    {event.websiteUrl || event.officialWebsiteUrl && (
                                         <Button asChild variant="outline" className="w-full border-white/10 bg-white/5 hover:bg-white/10 text-white font-black py-7 rounded-2xl text-lg">
                                             <Link href={event.websiteUrl || event.officialWebsiteUrl!} target="_blank">
                                                 Officiële Website
@@ -259,6 +290,24 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
                                         </Button>
                                     )}
                                 </div>
+
+                                {/* Map */}
+                                {(event.venueName || (event.city && event.address)) && (
+                                    <div className="pt-4">
+                                        <p className="text-xs text-gray-500 font-black uppercase tracking-[0.2em] mb-4">LOCATIE OP KAART</p>
+                                        <div className="w-full h-48 rounded-2xl overflow-hidden grayscale opacity-80 hover:grayscale-0 hover:opacity-100 transition-all border border-white/10 shadow-inner">
+                                            <iframe
+                                                width="100%"
+                                                height="100%"
+                                                frameBorder="0"
+                                                scrolling="no"
+                                                marginHeight={0}
+                                                marginWidth={0}
+                                                src={`https://maps.google.com/maps?q=${encodeURIComponent(`${event.venueName} ${event.address || ''} ${event.city} ${event.country}`)}&t=&z=14&ie=UTF8&iwloc=&output=embed`}
+                                            ></iframe>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Programma Section */}

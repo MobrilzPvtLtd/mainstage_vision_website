@@ -111,7 +111,7 @@ export default function VideosClient({ initialVideos }: VideosClientProps) {
                                 <div className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100 h-full flex flex-col">
                                     <div className="relative h-56 overflow-hidden bg-black">
                                         <Image
-                                            src={getImageUrl(video.thumbnailUrl)}
+                                            src={getImageUrl(video.thumbnailUrl, "event")}
                                             alt={video.title}
                                             fill
                                             className="object-cover group-hover:scale-110 transition-transform duration-700 opacity-90 group-hover:opacity-100"

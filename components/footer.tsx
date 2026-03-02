@@ -3,95 +3,59 @@ import Link from "next/link";
 export function Footer() {
     return (
         <footer className="bg-[#15171e] text-white">
-            <div className="container mx-auto px-6 py-12">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="container mx-auto px-6 py-16">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12">
                     {/* Brand Description */}
-                    <div>
-                        <h3 className="text-xl font-bold mb-4">
+                    <div className="space-y-6">
+                        <Link href="/" className="text-2xl font-black uppercase italic tracking-tighter inline-block">
                             <span className="text-white">MainStage</span>
                             <span className="text-[#e91e63]">Vision</span>
-                        </h3>
-                        <p className="text-gray-400 text-sm leading-relaxed">
-                            Het laatste nieuws uit de muziekwereld, live concertfoto's en een
-                            compleet overzicht van alle events.
+                        </Link>
+                        <p className="text-gray-400 text-sm leading-relaxed font-bold uppercase tracking-wide opacity-60">
+                            HET LAATSTE NIEUWS UIT DE MUZIEKWERELD, LIVE CONCERTFOTO'S EN EEN COMPLEET OVERZICHT VAN ALLE EVENTS.
                         </p>
+                    </div>
+
+                    {/* Newsletter / Nieuwsbrief */}
+                    <div>
+                        <h4 className="text-lg font-black mb-6 uppercase italic tracking-tighter text-white">Nieuwsbrief</h4>
+                        <p className="text-gray-400 text-xs mb-4 font-bold uppercase tracking-widest opacity-60">BLIJF OP DE HOOGTE!</p>
+                        <div className="relative">
+                            <input
+                                type="email"
+                                placeholder="E-mailadres..."
+                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#e91e63] transition-all font-bold placeholder:opacity-30"
+                            />
+                            <button className="mt-3 w-full bg-[#e91e63] hover:bg-white hover:text-[#e91e63] text-white font-black py-3 rounded-xl transition-all shadow-lg shadow-[#e91e63]/20 uppercase text-xs tracking-widest">
+                                Inschrijven
+                            </button>
+                        </div>
                     </div>
 
                     {/* Navigation Links */}
                     <div>
-                        <h4 className="text-lg font-bold mb-4 uppercase">Navigatie</h4>
-                        <ul className="space-y-2">
-                            <li>
-                                <Link
-                                    href="/"
-                                    className="text-gray-400 hover:text-[#e91e63] transition-colors text-sm"
-                                >
-                                    Home
-                                </Link>
-                            </li>
-                            <li>
-                                <Link
-                                    href="/nieuws"
-                                    className="text-gray-400 hover:text-[#e91e63] transition-colors text-sm"
-                                >
-                                    Nieuws
-                                </Link>
-                            </li>
-                            <li>
-                                <Link
-                                    href="/albums"
-                                    className="text-gray-400 hover:text-[#e91e63] transition-colors text-sm"
-                                >
-                                    Foto Albums
-                                </Link>
-                            </li>
-                            <li>
-                                <Link
-                                    href="/videos"
-                                    className="text-gray-400 hover:text-[#e91e63] transition-colors text-sm"
-                                >
-                                    Video's
-                                </Link>
-                            </li>
-                            <li>
-                                <Link
-                                    href="/events"
-                                    className="text-gray-400 hover:text-[#e91e63] transition-colors text-sm"
-                                >
-                                    Events
-                                </Link>
-                            </li>
-                            <li>
-                                <Link
-                                    href="/artiesten"
-                                    className="text-gray-400 hover:text-[#e91e63] transition-colors text-sm"
-                                >
-                                    Artiesten
-                                </Link>
-                            </li>
+                        <h4 className="text-lg font-black mb-6 uppercase italic tracking-tighter text-white">Navigatie</h4>
+                        <ul className="space-y-3">
+                            {['Home', 'Nieuws', 'Foto Albums', 'Video\'s', 'Events', 'Recensies', 'Artiesten'].map((item) => (
+                                <li key={item}>
+                                    <Link
+                                        href={`/${item.toLowerCase().replace(' ', '-').replace('\'', '').replace('ë', 'e')}`}
+                                        className="text-gray-400 hover:text-[#e91e63] transition-colors text-xs font-black uppercase tracking-widest"
+                                    >
+                                        {item}
+                                    </Link>
+                                </li>
+                            ))}
                         </ul>
                     </div>
 
                     {/* Info Links */}
                     <div>
-                        <h4 className="text-lg font-bold mb-4 uppercase">Info</h4>
-                        <ul className="space-y-2">
-                            <li>
-                                <Link
-                                    href="/over-ons"
-                                    className="text-gray-400 hover:text-[#e91e63] transition-colors text-sm"
-                                >
-                                    Over ons
-                                </Link>
-                            </li>
-                            <li>
-                                <Link
-                                    href="/contact"
-                                    className="text-gray-400 hover:text-[#e91e63] transition-colors text-sm"
-                                >
-                                    Contact
-                                </Link>
-                            </li>
+                        <h4 className="text-lg font-black mb-6 uppercase italic tracking-tighter text-white">Info</h4>
+                        <ul className="space-y-3">
+                            <li><Link href="/over-ons" className="text-gray-400 hover:text-[#e91e63] transition-colors text-xs font-black uppercase tracking-widest">Over ons</Link></li>
+                            <li><Link href="/contact" className="text-gray-400 hover:text-[#e91e63] transition-colors text-xs font-black uppercase tracking-widest">Contact</Link></li>
+                            <li><Link href="/privacy-policy" className="text-gray-400 hover:text-[#e91e63] transition-colors text-xs font-black uppercase tracking-widest">Privacybeleid</Link></li>
                         </ul>
                     </div>
                 </div>

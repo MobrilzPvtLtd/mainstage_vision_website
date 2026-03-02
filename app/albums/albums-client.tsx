@@ -111,7 +111,7 @@ export default function AlbumsClient({ initialAlbums }: AlbumsClientProps) {
                                 <div className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100 h-full flex flex-col">
                                     <div className="relative h-64 overflow-hidden">
                                         <Image
-                                            src={getImageUrl(album.coverImage)}
+                                            src={getImageUrl(album.coverImage, "album")}
                                             alt={album.title}
                                             fill
                                             className="object-cover group-hover:scale-110 transition-transform duration-700"

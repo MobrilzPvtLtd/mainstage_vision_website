@@ -4,14 +4,24 @@ const API_BASE_URL = "https://beheer.mainstage.vision";
 
 // Helper to construct image URLs
 export function getImageUrl(path: string | null | undefined, type?: "news" | "event" | "album" | "artist"): string {
-    if (!path) return "https://placehold.co/600x400/15171e/e91e63?text=MainStage+Vision"; // Fallback
+    if (!path) {
+        // Fallback images based on type
+        if (type === "artist") return "https://placehold.co/600x600/15171e/e91e63?text=Artist";
+        return "https://placehold.co/600x400/15171e/e91e63?text=MainStage+Vision";
+    }
+
     if (path.startsWith("http")) return path;
-    if (path.startsWith("/")) return `${API_BASE_URL}${path}`;
 
-    // Based on v2.0 docs example, news images might live in /uploads/news/ if not preceded by /
-    if (type === "news") return `${API_BASE_URL}/uploads/news/${path}`;
+    // Clean the path
+    const cleanPath = path.startsWith("/") ? path.slice(1) : path;
 
-    return `${API_BASE_URL}/uploads/${path}`;
+    // If it already looks like an uploads path, just return it with base
+    if (cleanPath.startsWith("uploads/")) return `${API_BASE_URL}/${cleanPath}`;
+
+    // Otherwise, build the path based on type
+    if (type === "news") return `${API_BASE_URL}/uploads/news/${cleanPath}`;
+
+    return `${API_BASE_URL}/uploads/${cleanPath}`;
 }
 
 // Types
@@ -19,31 +29,34 @@ export interface Event {
     id: number;
     name: string;
     eventType: string;
-    artist?: string; // Headliner from docs
+    artist?: string; // Headliner/Artist name
     logo?: string;
-    logoUrl?: string; // Standardized in docs v2.0
+    logoUrl?: string; // Standardized URL
     startDate: string;
     endDate?: string;
     venueName?: string;
+    address?: string;
     city?: string;
+    postalCode?: string;
     province?: string;
     country?: string;
     description?: string;
-    ticketStatus?: string;
-    ticketPrice?: string;
-    ticketUrl?: string; // v2.0 field
-    websiteUrl?: string; // v2.0 field
-    officialWebsiteUrl?: string; // v2.0 field (alias/fallback)
-    lineup?: Artist[]; // Actual API field
-    lineupArtists?: Artist[]; // Docs v2.0 field
-    parentEventId?: number; // For grouping festival days
-    address?: string;
-    postalCode?: string;
     status?: string;
+    ticketPrice?: string;
+    ticketStatus?: string;
+    ticketUrl?: string;
+    websiteUrl?: string;
+    officialWebsiteUrl?: string;
+    organizationName?: string; // v2 field
+    parentEventId?: number;
+    parentEvent?: { id: number; name: string }; // v2 field
+    childEvents?: { id: number; name: string; startDate: string }[]; // v2 field
+    lineup?: Artist[];
+    lineupArtists?: Artist[];
     relatedNews?: Article[];
     relatedAlbums?: Album[];
     relatedVideos?: Video[];
-    relatedEvents?: Event[]; // For "Programma" navigation
+    relatedEvents?: Event[];
 }
 
 export interface Author {
@@ -76,21 +89,21 @@ export interface Article {
     title: string;
     slug: string;
     excerpt?: string;
-    summary?: string;
-    content?: string;
+    summary?: string; // Full HTML content
+    content?: string; // Legacy/Alias
     publishedAt: string;
-    createdAt?: string; // v2.0 field
+    createdAt?: string;
     category: string;
     featuredImage?: string;
     isFeatured?: boolean;
     isBreaking?: boolean;
     readTime?: number;
-    author?: string | Author; // Docs say string, API sometimes returns object
+    author?: string | Author;
     photoCredit?: string;
-    tags?: string[]; // v2.0 field
-    eventId?: number; // v2.0 field
+    tags?: string[];
+    eventId?: number;
     relatedEventIds?: number[];
-    isEventSpecific?: boolean; // v2.0 field
+    isEventSpecific?: boolean;
 }
 
 export interface Album {
@@ -100,12 +113,21 @@ export interface Album {
     eventId?: number;
     eventName?: string;
     artistName?: string;
-    photoCount: number;
-    featuredPhoto?: { url: string; thumbnailUrl: string };
-    coverImage?: string; // Mapped from featuredPhoto for UI consistency
     photographerName?: string;
+    photoCount: number;
+    featuredPhotoId?: number;
+    isFeatured?: boolean;
+    featuredPhoto?: { url: string; thumbnailUrl: string; isFeatured?: boolean };
+    coverImage?: string; // Mapped from featuredPhoto for UI consistency
     createdAt: string;
     photos?: Photo[];
+    tags?: string[];
+    event?: {
+        name: string;
+        startDate: string;
+        venueName: string;
+        city: string;
+    };
 }
 
 export interface Photo {
@@ -135,6 +157,7 @@ export interface Video {
     views?: number; // Not in API, implies mock or optional
     createdAt: string;
     category?: string; // Mapped or optional
+    approvedAt?: string;
 }
 
 export interface Artist {
@@ -146,23 +169,77 @@ export interface Artist {
     photoUrl?: string;
     eventCount?: number;
     photoCount?: number;
-    verified?: boolean; // Not in API
-    followers?: number; // Not in API
-    country?: string; // Not in API
-    events?: Event[];
+    verified?: boolean;
+    followers?: number;
+    country?: string;
+    events?: (Event & { isPast?: boolean })[];
     albums?: Album[];
     news?: Article[];
     videos?: Video[];
 }
 
+export interface Review {
+    id: number;
+    title: string;
+    slug: string;
+    summary: string;
+    content: string;
+    featuredImage: string;
+    rating: number;
+    status: string;
+    publishDate: string;
+    eventId?: number;
+    authorId?: number;
+    author?: Author;
+    event?: Event;
+    tags?: string[];
+}
+
+export interface HeadlinerAnnouncement {
+    id: number;
+    eventId: number;
+    artistId: number;
+    title: string;
+    description: string;
+    announcementDate: string;
+    isActive: boolean;
+    eventName: string;
+    eventLogo: string;
+    eventStartDate: string;
+    artistName: string;
+    artistPhoto: string;
+}
+
 export interface SearchResult {
-    type: "event" | "nieuws" | "album" | "artiest";
+    type: "event" | "nieuws" | "news" | "album" | "artiest" | "artist" | "article" | "video";
     id: number;
     title: string;
     subtitle?: string;
     image?: string;
     url: string;
-    date?: string;
+    date?: string | null;
+}
+
+export interface SearchData {
+    articles?: Article[];
+    events?: Event[];
+    artists?: Artist[];
+    albums?: Album[];
+    videos?: Video[];
+}
+
+export interface StaffApplication {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    address: string;
+    city: string;
+    postalCode: string;
+    motivation: string;
+    cameraEquipment: string;
+    portfolioUrl: string;
+    desiredRole: "photographer" | "videographer" | "editor" | "reporter";
 }
 
 // API Functions
@@ -178,6 +255,7 @@ export async function getEvents(params: { limit?: number; recent?: boolean; incl
         const res = await fetch(`${API_BASE_URL}/api/events/public?${searchParams.toString()}`, { next: { revalidate: 60 } });
         if (!res.ok) throw new Error("Failed to fetch events");
         const data = await res.json();
+        // The API returns { "events": [...], "total": ... }
         return data.events || [];
     } catch (error) {
         console.error("Error fetching events:", error);
@@ -191,21 +269,36 @@ export async function getEvent(id: string): Promise<Event | null> {
         if (!res.ok) return null;
         const event = await res.json();
 
-        // If it's part of a festival (parentEventId), fetch siblings for the "Programma" section
-        if (event.parentEventId) {
+        // Single event endpoint usually returns the event object directly or wrapped in { event: ... }
+        // Looking at the docs, it seems to be the object directly.
+        const eventData = event.event || event;
+
+        // Multi-day event logic (Programma)
+        // If it's a child event, fetch siblings
+        if (eventData.parentEventId) {
             const siblingsRes = await fetch(`${API_BASE_URL}/api/events/public?limit=50&includePast=true`, { next: { revalidate: 3600 } });
             if (siblingsRes.ok) {
                 const data = await siblingsRes.json();
-                event.relatedEvents = (data.events || []).filter((e: Event) => e.parentEventId === event.parentEventId);
+                eventData.relatedEvents = (data.events || []).filter((e: Event) => e.parentEventId === eventData.parentEventId);
+            }
+        }
+        // If it's a parent event, use childEvents if available, or fetch them
+        else if (eventData.childEvents && eventData.childEvents.length > 0) {
+            // Already has basic info, but we might want full Event objects
+            const childIds = eventData.childEvents.map((ce: any) => ce.id);
+            const childrenRes = await fetch(`${API_BASE_URL}/api/events/public?limit=50&includePast=true`, { next: { revalidate: 3600 } });
+            if (childrenRes.ok) {
+                const data = await childrenRes.json();
+                eventData.relatedEvents = (data.events || []).filter((e: Event) => childIds.includes(e.id));
             }
         }
 
         // Ensure lineup matches lineupArtists for consistency
-        if (event.lineup && !event.lineupArtists) {
-            event.lineupArtists = event.lineup;
+        if (eventData.lineup && !eventData.lineupArtists) {
+            eventData.lineupArtists = eventData.lineup;
         }
 
-        return event;
+        return eventData;
     } catch (error) {
         console.error(`Error fetching event ${id}:`, error);
         return null;
@@ -216,7 +309,8 @@ export async function getPastEvents(): Promise<Event[]> {
     try {
         const res = await fetch(`${API_BASE_URL}/api/events/past`, { next: { revalidate: 3600 } });
         if (!res.ok) throw new Error("Failed to fetch past events");
-        return await res.json(); // API docs say it returns array directly
+        const data = await res.json();
+        return data.events || data; // Handle both direct array and object with events key
     } catch (error) {
         console.error("Error fetching past events:", error);
         return [];
@@ -243,12 +337,6 @@ export async function getNews(params: { limit?: number; category?: string; break
 }
 
 export async function getArticle(id: string): Promise<Article | null> {
-    // API doesn't explicitly list detail, but usually ID filtering works or we fetch all and find
-    // Let's try to fetch all with a limit if there's no direct endpoint, OR assume standard REST
-    // Implementation: Fetch list and find (fallback) or try direct if verified.
-    // For now, I'll assume I can filter the list or just fetch recent matches.
-    // OPTION: The docs didn't show /public/:id for news. I will fetch all (or limit 100) and find.
-    // This is inefficient but safe given the docs. Use cache.
     try {
         const allNews = await getNews({ limit: 100 });
         return allNews.find(a => a.id === parseInt(id)) || null;
@@ -281,7 +369,6 @@ export async function getAlbums(params: { limit?: number; featured?: boolean; re
         const res = await fetch(`${API_BASE_URL}/api/albums/public?${searchParams.toString()}`, { next: { revalidate: 60 } });
         if (!res.ok) throw new Error("Failed to fetch albums");
         const data = await res.json();
-        // Map API response to match our interface if needed
         return (data.albums || []).map((album: any) => ({
             ...album,
             coverImage: album.featuredPhoto?.url || getImageUrl(null)
@@ -293,9 +380,6 @@ export async function getAlbums(params: { limit?: number; featured?: boolean; re
 }
 
 export async function getAlbum(id: string): Promise<Album | null> {
-    // Docs allow query param id? No, typical REST. But docs say "Query Parameters: id".
-    // So distinct endpoint probably not there or it supports filter.
-    // "Query Parameters ... id" implies /api/albums/public?id=...
     try {
         const res = await fetch(`${API_BASE_URL}/api/albums/public?id=${id}`, { next: { revalidate: 60 } });
         if (!res.ok) return null;
@@ -345,8 +429,7 @@ export async function getArtists(): Promise<Artist[]> {
     try {
         const res = await fetch(`${API_BASE_URL}/api/artists/public`, { next: { revalidate: 3600 } });
         if (!res.ok) throw new Error("Failed to fetch artists");
-        const data = await res.json(); // Returns array directly in one doc example, but verify?
-        // Doc Chunk 6: "[ { ... } ]" - yes array directly.
+        const data = await res.json();
         return Array.isArray(data) ? data : (data.artists || []);
     } catch (error) {
         console.error("Error fetching artists:", error);
@@ -366,15 +449,54 @@ export async function getArtist(id: string): Promise<Artist | null> {
 }
 
 // Search
-export async function search(query: string): Promise<SearchResult[]> {
+export async function search(query: string): Promise<SearchData | null> {
     try {
         const res = await fetch(`${API_BASE_URL}/api/search?q=${encodeURIComponent(query)}`);
-        if (!res.ok) return [];
-        const data = await res.json();
-        return data.results || [];
+        if (!res.ok) return null;
+        return await res.json();
     } catch (error) {
         console.error("Error searching:", error);
+        return null;
+    }
+}
+
+// Headliner Announcements
+export async function getHeadlinerAnnouncements(): Promise<HeadlinerAnnouncement[]> {
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/public/headliner-announcements`, { next: { revalidate: 300 } });
+        if (!res.ok) return [];
+        const data = await res.json();
+        return Array.isArray(data) ? data : (data.announcements || []);
+    } catch (error) {
         return [];
+    }
+}
+
+// Newsletter
+export async function subscribeNewsletter(email: string): Promise<{ message?: string; error?: string }> {
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/newsletter/subscribe`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email }),
+        });
+        return await res.json();
+    } catch (error) {
+        return { error: "Newsletter subscription failed." };
+    }
+}
+
+// Staff Application
+export async function submitStaffApplication(data: StaffApplication): Promise<{ success?: boolean; message?: string; error?: string }> {
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/public/staff-application`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data),
+        });
+        return await res.json();
+    } catch (error) {
+        return { error: "Failed to submit application." };
     }
 }
 
@@ -398,3 +520,48 @@ export async function submitContact(data: ContactSubmission): Promise<{ message?
         return { error: "Failed to submit contact form. Please try again later." };
     }
 }
+
+// Reviews
+export async function getReviews(params: { limit?: number; recent?: boolean; eventId?: number } = {}): Promise<Review[]> {
+    const searchParams = new URLSearchParams();
+    if (params.limit) searchParams.append("limit", params.limit.toString());
+    if (params.recent) searchParams.append("recent", "true");
+    if (params.eventId) searchParams.append("eventId", params.eventId.toString());
+
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/reviews/public?${searchParams.toString()}`, { next: { revalidate: 60 } });
+        if (!res.ok) throw new Error("Failed to fetch reviews");
+        const data = await res.json();
+        return Array.isArray(data) ? data : (data.reviews || []);
+    } catch (error) {
+        console.error("Error fetching reviews:", error);
+        return [];
+    }
+}
+
+export async function getReview(id: string): Promise<Review | null> {
+    try {
+        const reviews = await getReviews();
+        // Since we don't have a specific detail endpoint mentioned in docs that returns a single object by ID (standard),
+        // we'll find it in the list or attempt a direct fetch if common pattern holds.
+        // Actually, let's try direct fetch first.
+        const res = await fetch(`${API_BASE_URL}/api/reviews/public?id=${id}`, { next: { revalidate: 60 } });
+        if (res.ok) {
+            const data = await res.json();
+            const review = Array.isArray(data) ? data.find((r: any) => r.id === parseInt(id)) : (data.reviews?.[0] || data);
+            if (review && review.id === parseInt(id)) return review;
+        }
+
+        const allReviews = await getReviews();
+        return allReviews.find(r => r.id === parseInt(id)) || null;
+    } catch (error) {
+        console.error(`Error fetching review ${id}:`, error);
+        return null;
+    }
+}
+
+// Utils
+export function getCalendarUrl(): string {
+    return `${API_BASE_URL}/api/calendar/events.ics`;
+}
+
